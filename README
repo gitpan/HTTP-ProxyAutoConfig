@@ -1,0 +1,11 @@
+This module is being developed to provide access for Perl scripts to
+the Proxy Auto Config format from Netscape:
+
+http://home.netscape.com/eng/mozilla/2.0/relnotes/demo/proxy-live.html
+
+This is very very alpha, and may end up being sucked into another package
+if I can find a different maintainer.
+
+Ryan Eatmon
+reatmon@jabber.org
+

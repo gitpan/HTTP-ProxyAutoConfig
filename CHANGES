@@ -1,0 +1,5 @@
+0.1
+===
+  - First version.  You can't talk to a pac file that has anything
+    that is even remotely JavaScript except for the functions that
+    are explicity defined for this.

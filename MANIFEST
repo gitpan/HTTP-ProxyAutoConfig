@@ -1,0 +1,8 @@
+CHANGES
+README
+LICENSE.LGPL
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+ProxyAutoConfig.pm
+examples/auto_proxy.pl
