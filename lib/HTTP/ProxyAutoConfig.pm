@@ -1,107 +1,123 @@
-##############################################################################
-#
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Library General Public
-#  License as published by the Free Software Foundation; either
-#  version 2 of the License, or (at your option) any later version.
-#
-#  This library is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#  Library General Public License for more details.
-#
-#  You should have received a copy of the GNU Library General Public
-#  License along with this library; if not, write to the
-#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-#  Boston, MA  02111-1307, USA.
-#
-#  Jabber
-#  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
-#
-##############################################################################
-
 package HTTP::ProxyAutoConfig;
 
 =head1 NAME
 
-HTTP::ProxyAutoConfig - provides a unifed way to get the proxy information
+HTTP::ProxyAutoConfig - use a .pac or wpad.dat file to get proxy information
 
 =head1 SYNOPSIS
 
-HTTP::ProxyAutoConfig is a module that allows perl scripts that need
-access to proxy servers to utilize the standard proxy settings provided
-by an IT department.
+  use HTTP::ProxyAutoConfig;
+
+  my $pac = HTTP::ProxyAutoConfig->new("http://foo.bar/auto-proxy.pac");
+  my $pac = new HTTP::ProxyAutoConfig('/Documents and Settings/me/proxy.pac');
+  my $pac = HTTP::ProxyAutoConfig->new();
+
+  my $proxy = $pac->FindProxy('http://www.yahoo.com');
 
 =head1 DESCRIPTION
 
-This module provides a consistent method for finding the proxy server
-needed to talk to for a given URL.  It can handle parsing the http_proxy,
-https_proxy, ftp_proxy, and http_auto_proxy variables to determine
-what it is you want it to do.  If you set the http_auto_proxy variable
-it overrides the others and fetches the PAC file from there and uses
-those settings.
+I<HTTP::ProxyAutoConfig> allows perl scripts that need to access the
+Internet to determine whether to do so via a proxy server.  To do this,
+it uses proxy settings provided by an IT department, either on the Web
+or in a browser's I<.pac> file on disk.
 
-Access to the proxy information is provided in a single function call
-to FindProxyForURL(url,host).  A string is returned that tells you what
-to do, either "DIRECT", "PROXY host:port", or "SOCKS host:port".
+It provides means to find the proxy server (or lack of one) for
+a given URL.  If your application has located either a I<wpad.dat>
+file or a I<.pac> file, I<HTTP::ProxyAutoConfig> processes it
+to determine how to handle a particular destination URL.
+If it's not given a I<wpad.dat> or I<.pac> file, I<HTTP::ProxyAutoConfig>
+tests environment variables to determine whether there's a proxy server.
 
-The Proxy Auto Config format and rules are defined at Netscape:
+A I<wpad.dat> or I<.pac> file contains a JavaScript function called
+I<FindProxyForURL>.  This module allows you to call the function to
+learn how to access various URLs.
 
-http://home.netscape.com/eng/mozilla/2.0/relnotes/demo/proxy-live.html
+Mapping from a URL to the proxy information is provided by a
+I<FindProxyForURL(url, host)> or I<FindProxy(url)> function call.
+Both functions return a string that tells your application what to do,
+namely a direct connection to the Internet or a connection via a proxy
+server.
 
-The file basically works by defining a JavaScript function called
-FindProxyForURL.  This module fetches that file and converts the
-JavaScript function into a Perl function and then defines the Perl
-function with that converted data.
+The Proxy Auto Config format and rules were originally developed at
+Netscape.  The Netscape documentation is archived at
+L<http://linuxmafia.com/faq/Web/autoproxy.html>
+
+More recent references include:
+
+=over 4
+
+=item L<http://en.wikipedia.org/wiki/Proxy_auto-config>
+
+=item L<http://en.wikipedia.org/wiki/Web_Proxy_Autodiscovery_Protocol>
+
+=item L<http://www.craigjconsulting.com/proxypac.html>
+
+=item L<http://www.returnproxy.com/proxypac/>
+
+=back
 
 =head1 METHODS
 
-  new(url) - creates the FindProxyForURL function and the object.
-             The url argument is optional, and points to the auto-proxy
-             file provided on your network.  If you do not specify a
-             url, then it will check the http_auto_proxy variable,
-             followed by the http_proxy, https_proxy, and ftp_proxy
-             variables.
+=head2 new( url_or_file )
 
-  my $pac = new HTTP::ProxyAutoConfig("http://foo.bar/auto-proxy.pac");
-  my $pac = new HTTP::ProxyAutoConfig();
+This call creates the I<FindProxyForURL> function and the object through
+which it can be called. The I<url_or_file> argument is optional, and
+points to the auto-proxy file provided on your network or a file used
+by your browser.  If there is no argument, I<HTTP::ProxyAutoConfig>
+will check the I<http_auto_proxy> environment variable, followed by the
+I<http_proxy>, I<https_proxy>, and I<ftp_proxy> variables.
 
-  FindProxyForURL(url,host) - takes the url, and the host (minus
-                              port) from the URL, and determines the
-                              action you should take to contact that
-                              host.  It returns one of three things:
+As shown above, you can use either the I<HTTP::ProxyAutoConfig-E<gt>new()>
+or the I<new HTTP::ProxyAutoConfig()> form, but don't use the
+I<HTTP::ProxyAutoConfig::new()> form.
 
-                                DIRECT           - connect directly to them
-                                PROXY host:port  - connect via the proxy
-                                SOCKS host:port  - connect via SOCKS
+=head2 FindProxyForURL( url, host )
 
-  FindProxy(url) - calls the FindProxyForURL function and passes it the
-                   correct options.  This is just a wrapper.
+This takes the url, and the host (minus port) from the URL, and
+determines the action you should take to contact that host.
+It returns one of three strings:
 
-  Reload() - allows you to fetch the PAC again and regenerate the
-             FindProxyForURL function based on anything you might
-             have changed in the environment.
+  DIRECT           - connect directly
+  PROXY host:port  - connect via the proxy
+  SOCKS host:port  - connect via SOCKS
 
-=head1 AUTHOR
+This result can be used to configure a net-access module like LWP.
 
-By Ryan Eatmon in May of 2001
+=head2 FindProxy( url )
 
-=head1 COPYRIGHT
+Same as the previous call, except you don't have to extract the host
+from the URL.
 
-This module is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+=head1 AUTHORS
+
+  By Ryan Eatmon in May of 2001
+  0.2 by Craig MacKenna, March 2010
+
+=head1 COPYRIGHT AND LICENSE
+
+  Copyright (C) 2001, Ryan Eatmon
+  Copyright (C) 2010, Craig MacKenna
+
+This module is free software; you may redistribute it and/or
+modify it under the same terms as Perl 5.10.1.  For more details,
+see the full text of the licenses at
+L<http://www.perlfoundation.org/artistic_license_1_0> and
+L<http://www.gnu.org/licenses/gpl-2.0.html>
+
+This program is distributed in the hope that it will be useful, but
+it is provided 'as is' and without any express or implied warranties.
+For details, see the full text of the licenses at the above URLs.
 
 =cut
 
 use strict;
+use warnings;
 use Carp;
 use Sys::Hostname;
 use IO::Socket;
 use POSIX;
-use vars qw($VERSION );
 
-$VERSION = "0.1";
-
+our $VERSION = "0.2";
 
 sub new {
   my $proto = shift;
@@ -124,19 +140,19 @@ sub new {
 sub FindProxy {
   my $self = shift;
   my ($url) = @_;
+  my $host;
+  (undef, $host) = ($url =~ m'^([a-z]+://)?([^/]+)');
 
-  my ($host) = ($url =~ /^(\S*\:?\/?\/?[^\/:]+)/);
-  $host =~ s/^[^\:]+\:\/\///;
+  foreach my $proxy (split(/\s*\;\s*/, $self->FindProxyForURL($url, $host))) {
 
-  foreach my $proxy (split(/\s*\;\s*/,$self->FindProxyForURL($url,$host))) {
     return $proxy if ($proxy eq "DIRECT");
-    my ($host,$port) = ($proxy =~ /^PROXY\s*(\S+):(\d+)$/);
+
+    my ($host, $port) = ($proxy =~ /^PROXY\s*(\S+):(\d+)$/);
 
     return $proxy if (new IO::Socket::INET(PeerAddr=>$host,
-					   PeerPort=>$port,
-					   Proto=>"tcp"));
+                                           PeerPort=>$port,
+                                           Proto=>"tcp"));
   }
-
   return undef;
 }
 
@@ -154,39 +170,57 @@ sub Reload  {
 
   if (defined($url) && ($url ne "")) {
 
-    my ($host,$port,$path) = ($url =~ /^http:\/\/([^\/:]+):?(\d*)\/?(.*)$/);
+    ########## accept file path as well as URL
+    ########## added to version 0.2 cmac march 2010
+    my $function = ""; # used to be further down
+    my ($rsize, $f);
+    if ($url !~ m'^[a-z]+://'
+     && -e $url) {
 
-    $port = 80 if ($port eq "");
+      # looks like $url is a path to a file
+      open($f, "<$url") or die "Can't open $url for read: $!";
+      my $size = -s $url or die "$url seems to be empty";
+      ($rsize = read($f, $function, $size)) && $rsize == $size
+        or die "$url contains $size bytes, but 'read' read $rsize bytes";
+      close($f) or die "Can't close $url: $!";
+    } else {
+    ########## end addition
 
-    my $sock = new IO::Socket::INET(PeerAddr=>$host,
-				    PeerPort=>$port,
-				    Proto=>"tcp");
+      my ($host, $port, $path) = ($url =~ /^http:\/\/([^\/:]+):?(\d*)\/?(.*)$/);
 
-    die("Cannot create normal socket: $!") unless defined($sock);
+      $port = 80 if ($port eq "");
 
-    my $send = "GET /$path HTTP/1.1\r\nCache-Control: no-cache\r\nHost: $host:$port\r\n\r\n";
+      my $sock = new IO::Socket::INET(PeerAddr=>$host,
+                                      PeerPort=>$port,
+                                      Proto=>"tcp");
 
-    $sock->syswrite($send,length($send),0);
+      die("Cannot create normal socket: $!") unless defined($sock);
 
-    my $buff;
-    my $status = 1;
-    my $function = "";
-    while($status > 0) {
-      $status = $sock->sysread($buff,POSIX::BUFSIZ);
-      $function .= $buff;
-    }
+      my $send = "GET /$path HTTP/1.1\r\nCache-Control: no-cache\r\nHost: $host:$port\r\n\r\n";
 
-    my $chunked = ($function =~ /chunked/);
+      $sock->syswrite($send,length($send),0);
 
-    $function =~ s/^.+?\r?\n\r?\n//s;
-    if ($chunked == 1) {
-      $function =~ s/\n\r\n\S+\s*\r\n/\n/g;
-      $function =~ s/^\S+\s*\r\n//;
-    }
+      my $buff;
+      my $status = 1;
+      while($status > 0) {
+        $status = $sock->sysread($buff,POSIX::BUFSIZ);
+        $function .= $buff;
+      }
 
+      my $chunked = ($function =~ /chunked/);
+
+      $function =~ s/^.+?\r?\n\r?\n//s;
+      if ($chunked == 1) {
+        $function =~ s/\n\r\n\S+\s*\r\n/\n/g;
+        $function =~ s/^\S+\s*\r\n//;
+      }
+    } # get $function from internet
     $function = $self->JavaScript2Perl($function);
-
     eval($function);
+
+    ########## added to version 0.2 cmac march 2010
+    if ($@) {die "Bad JavaScript->perl translation.\n"
+               . "Please notify the co-maintainer of HTTP::ProxyAutoConfig:\n$@"}
   } else {
     my $http_host;
     my $http_port;
@@ -213,9 +247,9 @@ sub Reload  {
       $function .= "  return \"DIRECT\"; }";
     }
     eval($function);
+    if ($@) {die $@}
   }
 }
-
 
 ##############################################################################
 #
@@ -234,11 +268,12 @@ sub JavaScript2Perl {
   my %vars;
   my $variable;
 
+  # remove comments, substitute . for +, index variable names
   foreach my $piece (split(/(\s)/,$function)) {
     foreach my $subpiece (split(/([\"\'\=])/,$piece)) {
       next if ($subpiece eq "");
-      if ($subpiece eq "=") {
-	$vars{$variable} = 1;
+      if ($subpiece eq "=" && $variable =~ /^\w/) {
+        $vars{$variable} = 1;
       }
       $variable = $subpiece unless ($subpiece eq " ");
 
@@ -246,22 +281,22 @@ sub JavaScript2Perl {
 
       $lineComment = 0 if ($subpiece eq "\n");
       $quoted ^= 1 if (($blockComment == 0) &&
-		       ($lineComment == 0) &&
-		       ($subpiece =~ /(\"|\')/));
+               ($lineComment == 0) &&
+               ($subpiece =~ /(\"|\')/));
       if (($quoted == 0) && ($subpiece =~ /\/\*/)) {
-	$blockComment = 1;
+    $blockComment = 1;
       } elsif (($quoted == 0) && ($subpiece =~ /\/\//)) {
-	$lineComment = 1;
+    $lineComment = 1;
       } elsif (($blockComment == 1) && ($subpiece =~ /\*\//)) {
-	$blockComment = 0;
+    $blockComment = 0;
       } else {
-	$newFunction .= $subpiece
-	  unless (($blockComment == 1) || ($lineComment == 1));
+    $newFunction .= $subpiece
+      unless (($blockComment == 1) || ($lineComment == 1));
       }
     }
   }
 
-  $newFunction =~ s/^\s*function\s*(\S+)\s*\(\s*([^\,]+)\s*\,\s*([^\)]+)\s*\)\s*\{/sub $1 \{\n  my \(\$self,$2,$3\) = \@_\;\n  my(\$stub);\n/;
+  $newFunction =~ s/^\s*function\s*(\S+)\s*\(\s*([^\,]+)\s*\,\s*([^\)]+)\s*\)\s*\{/sub $1 \{\n  my \(\$self, $2 ,$3\) = \@_\;\n  my(\$stub);\n/;
   $vars{$2} = 2;
   $vars{$3} = 2;
 
@@ -272,25 +307,90 @@ sub JavaScript2Perl {
     if ($piece eq "my(\$stub);") {
       $piece = "my(\$stub";
       foreach my $var (keys(%vars)) {
-	next if ($vars{$var} == 2);
-	$piece .= ",\$".$var;
+    next if ($vars{$var} == 2);
+    $piece .= ",\$".$var;
       }
       $piece .= ");";
     }
-    foreach my $subpiece (split(/([\"\'\=\,\+\)\(])/,$piece)) {
+    foreach my $subpiece (split(/([\"\'\=\,\+\x29\x28])/,$piece)) {
       next if ($subpiece eq "");
       $quoted ^= 1 if (($blockComment == 0) &&
-		       ($lineComment == 0) &&
-		       ($subpiece =~ /(\"|\')/));
+               ($lineComment == 0) &&
+               ($subpiece =~ /(\"|\')/));
       $subpiece = "\$".$subpiece
-	if (($quoted == 0) && exists($vars{$subpiece}));
+      if (($quoted == 0) && exists($vars{$subpiece}));
       $finalFunction .= $subpiece;
     }
   }
+  ######### added to ProxyAutoConfig 0.2 by cmac, March 2010
+  # the preceding code has taken comments out, which makes life simpler
 
+  # since most comparisons will be strings, change JS relational operators
+  #  to perl's string operators
+  my %opers = ('===' => 'eq', '==' => 'eq', '!=' => 'ne', '>=' => 'ge', 
+                '<=' => 'le',  '>' => 'gt',  '<' => 'lt');
+
+  my $search = '(\'|")|(' . join('|', sort {length($b) <=> length($a)} keys(%opers)) . ')';
+  while ($finalFunction =~ /$search/mg) {
+    if ($1) {
+      $finalFunction =~ /(\A|[^\\])$1/mg or last;
+    } else {
+      my $pos = pos($finalFunction) - length($2);
+      substr ($finalFunction, $pos, length($2), " $opers{$2} ");
+      pos($finalFunction) = $pos + 4;
+    }
+    my $zzz=0;
+  }
+  # collapse 'else if' into 'elsif'
+  $finalFunction =~ s/\belse\s+if\b/elsif/mg;
+
+  # javascript allows if/for/while/else/do without {} around a subsequent
+  #   single statement, but perl doesn't so put {} around such statements
+
+  while ($finalFunction =~ /('|"|\b(if|for|while|elsif|(else|do))\b)\s*/mg) {
+    my $posLP = pos($finalFunction);
+    if ($1 eq "'" || $1 eq '"') {
+      $finalFunction =~ /(\A|[^\\])$1/mg or last;
+    } elsif ($3
+          || slide_lp_thru_rp($finalFunction)) {
+      my $posRP = pos($finalFunction);
+      if ($finalFunction =~ s/\G([^\x7B])/\x7B$1/) {
+        place_ending_rb($finalFunction, $posRP+1);
+      }
+      pos($finalFunction) = $posLP;
+  } }
   return $finalFunction;
 }
+# slide through (expression) after if/for/while/elsif
+sub slide_lp_thru_rp {
+  my $parenCt = 0;
+  while ($_[0] =~ /(\x28|\x29|'|")/mg) {
+    if ($1 eq '(') {
+      $parenCt++;
+    } elsif ($1 eq ')' && --$parenCt <= 0) {
+      $_[0] =~ /\s+/mg; # slide to what's after the )
+      return 1;
+    } elsif ($1 eq '"' || $1 eq "'")  {
+      $_[0] =~ /(\A|[^\\])$1/mg or last;
+} } }
+# add } at end of single statement after if/for/while/else/do
+sub place_ending_rb {
+  pos($_[0]) = $_[1];
+  # scan to ; or end of line
+  while ($_[0] =~ /(;|$|'|")/mg) {
+    if ($1 eq ';') {pos($_[0])--}
+    if (!$1 || $1 eq ';') {
+      # put in the }
+      $_[0] =~ s/\G;?/\x7D/;
+      return;
+    } elsif ($1 eq '"' || $1 eq "'")  {
+      $_[0] =~ /(\A|[^\\])$1/mg or last;
+} } }
 
+sub validIP {
+  return $_[0] =~ /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/
+      && $1 <= 255 && $2 <= 255 && $3 <= 255 && $4 <= 255;
+}
 
 ##############################################################################
 #
@@ -301,9 +401,8 @@ sub JavaScript2Perl {
 sub isPlainHostName {
   my ($host) = @_;
 
-  return (($host =~ /\./) ? 0 : 1);
+  return $host !~ /\./;
 }
-
 
 ##############################################################################
 #
@@ -311,27 +410,26 @@ sub isPlainHostName {
 #
 ##############################################################################
 sub dnsDomainIs {
-  my ($host,$domain) = @_;
+  my ($host, $domain) = @_;
 
-  $domain =~ s/\./\\\./;
-  return (($host =~ /$domain$/) ? 1 : 0);
+  my $lh = length($host);
+  my $ld = length($domain);
+  return $lh >= $ld
+      && substr($host, $lh - $ld) eq $domain;
 }
-
 
 ##############################################################################
 #
 # localHostOrDomainIs - PAC command to tell if the host matches, or if it is
-#                       unqaulifed and in the domain.
+#                       unqualified and in the domain.
 #
 ##############################################################################
 sub localHostOrDomainIs {
-  my ($host,$hostdom) = @_;
+  my ($host, $hostdom) = @_;
 
-  return 1 if ($host eq $hostdom);
-  return 0 if ($host =~ /\./);
-  return 1 if ($hostdom =~ /^$host/);
+  return $host eq $hostdom
+      || rindex($hostdom, "$host.") == 0;
 }
-
 
 ##############################################################################
 #
@@ -339,10 +437,8 @@ sub localHostOrDomainIs {
 #
 ##############################################################################
 sub isResolvable {
-  my ($host) = @_;
-  return (defined(gethostbyname($host)) ? 1 : 0);
+  return defined(gethostbyname($_[0]));
 }
-
 
 ##############################################################################
 #
@@ -351,47 +447,19 @@ sub isResolvable {
 #
 ##############################################################################
 sub isInNet {
-  my ($host,$pattern,$mask) = @_;
+  my ($ipaddr, $pattern, $maskstr) = @_;
 
-  my $addr = dnsResolve($host);
-  return unless defined($addr);
-
-  my @addr = split(/\./,$addr);
-  my @mask = split(/\./,$mask);
-  my @pattern;
-
-  foreach my $count (0..3) {
-    my $bitAddr = dec2bin($addr[$count]);
-    my $bitMask = dec2bin($mask[$count]);
-
-    $pattern[$count] = bin2dec($bitAddr & $bitMask),"\n";
+  if (!validIP($ipaddr)) {
+    $ipaddr = dnsResolve($ipaddr);
+    if (!$ipaddr) {return ''}
   }
+  if (!validIP($pattern) || !validIP($maskstr)) {return ''}
 
-  my $hostPattern = join(".",@pattern);
-  return (($pattern eq $hostPattern) ? 1 : 0);
+  my $host = inet_aton($ipaddr);
+  my $pat  = inet_aton($pattern);
+  my $mask = inet_aton($maskstr);
+  return ($host & $mask) eq ($pat & $mask);
 }
-
-
-##############################################################################
-#
-# dec2bin - decimal to binary conversion
-#
-##############################################################################
-sub dec2bin {
-  my $str = unpack("B32", pack("N", shift));
-  return $str;
-}
-
-
-##############################################################################
-#
-# bin2dec - binary to decimal conversion
-#
-##############################################################################
-sub bin2dec {
-  return unpack("N", pack("B32", substr("0" x 32 . shift, -32)));
-}
-
 
 ##############################################################################
 #
@@ -399,21 +467,25 @@ sub bin2dec {
 #
 ##############################################################################
 sub dnsResolve {
-  my ($host) = @_;
-  return unless isResolvable($host);
-  return inet_ntoa(inet_aton($host));
+  my $ipad = inet_aton($_[0]);
+  if ($ipad) {return inet_ntoa($ipad)}
+  return;
 }
-
 
 ##############################################################################
 #
 # myIpAddress - PAC command to get your IP.
 #
 ##############################################################################
-sub myIpAddress {
-  return inet_ntoa(inet_aton(hostname()));
+my $myIpAddress;
+BEGIN {
+  my $hostname = hostname();
+  my $ipad = inet_aton($hostname);
+  $myIpAddress = $ipad ? inet_ntoa($ipad) : '127.0.0.1';
 }
-
+sub myIpAddress {
+  return $myIpAddress;
+}
 
 ##############################################################################
 #
@@ -422,15 +494,9 @@ sub myIpAddress {
 #
 ##############################################################################
 sub dnsDomainLevels {
-  my ($host) = @_;
-
-  my $count = 0;
-  foreach my $piece (split(/(\.)/,$host)) {
-    $count++ if ($piece eq ".");
-  }
-  return $count;
+  my @parts = split /\./, $_[0];
+  return @parts-1;
 }
-
 
 ##############################################################################
 #
@@ -439,14 +505,18 @@ sub dnsDomainLevels {
 #
 ##############################################################################
 sub shExpMatch {
-  my ($str,$shellExp) = @_;
+  my ($str, $shellExp) = @_;
 
-  $shellExp =~ s/\//\\\//g;
-  $shellExp =~ s/\*/\.\*/g;
+  # this escapes the perl regexp characters that need it except ? and *
+  # it also escapes /
+  $shellExp =~ s#([\\|\x28\x29\x5B\x7B^\$+./])#\\$1#g;
 
-  return (($str =~ /$shellExp/) ? 1 : 0);
+  # there are two wildcards in "shell expressions": * and ?
+  $shellExp =~ s/\?/./g;
+  $shellExp =~ s/\*/.*?/g;
+
+  return $str =~ /^$shellExp$/;
 }
-
 
 ##############################################################################
 #
@@ -461,11 +531,11 @@ sub weekDayRange {
   my $gmt = "";
   $gmt = shift if ($_[0] eq "GMT");
 
-  my %wd = ( SUN=>0,MON=>1,TUE=>2,WED=>3,THU=>4,FRI=>5,SAT=>6);
+  my %wd = ( SUN=>0, MON=>1, TUE=>2, WED=>3, THU=>4, FRI=>5, SAT=>6);
   my $dow = (($gmt eq "GMT") ? (gmtime)[6] : (localtime)[6]);
 
   if ($wd2 eq "") {
-    return (($dow eq $wd{$wd1}) ? 1 : 0);
+    return $dow eq $wd{$wd1};
   } else {
     my @range;
     if ($wd{$wd1} < $wd{$wd2}) {
@@ -474,13 +544,10 @@ sub weekDayRange {
       @range = ($wd{$wd1}..6,0..$wd{$wd2});
     }
     foreach my $tdow (@range) {
-      return 1 if ($dow eq $tdow);
-    }
-    return 0;
-  }
-  return 0;
+      return $dow eq $tdow;
+  } }
+  return '';
 }
-
 
 ##############################################################################
 #
@@ -524,14 +591,11 @@ sub dateRange {
       return 1;
     } elsif (($args{year2} == $year) && ($args{mon2} >= $mon)) {
       return 1;
-    } else {
-      return 0;
     }
     return 0;
 
-
   } elsif (exists($args{mon1}) && exists($args{year1}) &&
-	   exists($args{mon2}) && exists($args{year2})) {
+       exists($args{mon2}) && exists($args{year2})) {
     if (($args{year1} < $year) && ($args{year2} > $year)) {
       return 1;
     } elsif (($args{year1} == $year) && ($args{mon1} < $mon)) {
@@ -539,25 +603,21 @@ sub dateRange {
     } elsif (($args{year2} == $year) && ($args{mon2} > $mon)) {
       return 1;
     } elsif (($args{year1} == $year) && ($args{mon1} == $mon) &&
-	     ($args{day1} <= $mday)) {
+         ($args{day1} <= $mday)) {
       return 1;
     } elsif (($args{year2} == $year) && ($args{mon2} == $mon) &&
-	     ($args{day2} >= $mday)) {
+         ($args{day2} >= $mday)) {
       return 1;
-    } else {
-      return 0;
     }
     return 0;
   } elsif (exists($args{day1}) && exists($args{mon1}) &&
-	   exists($args{day2}) && exists($args{mon2})) {
+       exists($args{day2}) && exists($args{mon2})) {
     if (($args{mon1} < $mon) && ($args{mon2} > $mon)) {
       return 1;
     } elsif (($args{mon1} == $mon) && ($args{day1} <= $mday)) {
       return 1;
     } elsif (($args{mon2} == $mon) && ($args{day2} >= $mday)) {
       return 1;
-    } else {
-      return 0;
     }
     return 0;
   } elsif (exists($args{year1}) && exists($args{year2})) {
@@ -581,14 +641,9 @@ sub dateRange {
     return (($args{mon1} == $mon) ? 1 : 0);
   } elsif (exists($args{day1})) {
     return (($args{day1} == $mday) ? 1 : 0);
-  } else {
-    return 0;
   }
-
   return 0;
-
 }
-
 
 ##############################################################################
 #
@@ -635,14 +690,11 @@ sub timeRange {
       return 1;
     } elsif (($args{hour2} == $hour) && ($args{min2} >= $min)) {
       return 1;
-    } else {
-      return 0;
     }
     return 0;
 
-
   } elsif (exists($args{min1}) && exists($args{hour1}) &&
-	   exists($args{min2}) && exists($args{hour2})) {
+       exists($args{min2}) && exists($args{hour2})) {
     if (($args{hour1} < $hour) && ($args{hour2} > $hour)) {
       return 1;
     } elsif (($args{hour1} == $hour) && ($args{min1} < $min)) {
@@ -650,25 +702,21 @@ sub timeRange {
     } elsif (($args{hour2} == $hour) && ($args{min2} > $min)) {
       return 1;
     } elsif (($args{hour1} == $hour) && ($args{min1} == $min) &&
-	     ($args{sec1} <= $sec)) {
+         ($args{sec1} <= $sec)) {
       return 1;
     } elsif (($args{hour2} == $hour) && ($args{min2} == $min) &&
-	     ($args{sec2} >= $sec)) {
+         ($args{sec2} >= $sec)) {
       return 1;
-    } else {
-      return 0;
     }
     return 0;
   } elsif (exists($args{sec1}) && exists($args{min1}) &&
-	   exists($args{sec2}) && exists($args{min2})) {
+       exists($args{sec2}) && exists($args{min2})) {
     if (($args{min1} < $min) && ($args{min2} > $min)) {
       return 1;
     } elsif (($args{min1} == $min) && ($args{sec1} <= $sec)) {
       return 1;
     } elsif (($args{min2} == $min) && ($args{sec2} >= $sec)) {
       return 1;
-    } else {
-      return 0;
     }
     return 0;
   } elsif (exists($args{hour1}) && exists($args{hour2})) {
@@ -692,13 +740,7 @@ sub timeRange {
     return (($args{min1} == $min) ? 1 : 0);
   } elsif (exists($args{sec1})) {
     return (($args{sec1} == $sec) ? 1 : 0);
-  } else {
-    return 0;
   }
-
   return 0;
-
 }
-
-
 1;

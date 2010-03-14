@@ -1,15 +1,15 @@
 use ExtUtils::MakeMaker;
 
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-
 WriteMakefile(
-	      'NAME'	  => 'HTTP::ProxyAutoConfig',
-	      'PM' 	  => {
-			      'ProxyAutoConfig.pm' => '$(INST_LIBDIR)/ProxyAutoConfig.pm'
-			     },
-	      'MAN3PODS'  => { 'ProxyAutoConfig.pm'=> '$(INST_MAN3DIR)/HTTP::ProxyAutoConfig.3pm',
-			     },
-	      'VERSION'   => '0.1',
-	      'dist'      => { 'COMPRESS' => 'gzip --best' }
-	     );
+    'ABSTRACT_FROM'  => 'lib/HTTP/ProxyAutoConfig.pm',
+    'AUTHOR'         => 'Ryan Eatmon <reatmon@mail.com>, Craig MacKenna <craig@animalhead.com>',
+    'BUILD_REQUIRES' => {'LWP'           => 5.834,
+                         'Test::More'    => 0},
+    'LICENSE'        => 'perl',
+	'NAME'	         => 'HTTP::ProxyAutoConfig',
+    'PREREQ_PM'      => {'Carp'          => 0,
+                         'IO::Socket'    => 0,
+                         'POSIX'         => 0,
+                         'Sys::Hostname' => 0},
+	'VERSION_FROM'   => 'lib/HTTP/ProxyAutoConfig.pm',
+);
