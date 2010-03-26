@@ -29,14 +29,15 @@ while (<DATA>) {
     is ($got_proxy, $exp_proxy, "check returned proxy, __DATA__ line $line");
 } }
 seek DATA, $pos, 0;
+undef $pac;
 
 # try getting .pac file from internet
 my $ua = LWP::UserAgent->new(timeout => 30);
 my ($pac_url, $pac_urlOK);
 
-for ($HTTP::ProxyAutoConfig::VERSION, '0.1') {
+for ($HTTP::ProxyAutoConfig::VERSION, '0.2') {
   # put a previous version here -------^, in case we haven't uploaded this $VERSION yet
-  $pac_url = "http://cpansearch.perl.org/src/REATMON/HTTP-ProxyAutoConfig-$_/t/example.pac";
+  $pac_url = "http://cpansearch.perl.org/src/MACKENNA/HTTP-ProxyAutoConfig-$_/t/example.pac";
   my $resp = $ua->head($pac_url);
   if ($resp->is_success) {
     $pac_urlOK = 1;

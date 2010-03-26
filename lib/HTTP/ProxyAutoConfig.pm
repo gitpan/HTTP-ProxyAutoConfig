@@ -115,9 +115,8 @@ use warnings;
 use Carp;
 use Sys::Hostname;
 use IO::Socket;
-use POSIX;
 
-our $VERSION = "0.2";
+our $VERSION = "0.3";
 
 sub new {
   my $proto = shift;
@@ -198,14 +197,10 @@ sub Reload  {
 
       my $send = "GET /$path HTTP/1.1\r\nCache-Control: no-cache\r\nHost: $host:$port\r\n\r\n";
 
-      $sock->syswrite($send,length($send),0);
-
-      my $buff;
-      my $status = 1;
-      while($status > 0) {
-        $status = $sock->sysread($buff,POSIX::BUFSIZ);
-        $function .= $buff;
-      }
+      $sock->syswrite($send, length($send), 0);
+      # modified 25 Mar 2010: it took minutes for a timeout on a 0-length buffer
+      # what's a reasonable max for HTTP headers plus a GetProxyFromURL function?
+      $sock->sysread($function, 1<<20);
 
       my $chunked = ($function =~ /chunked/);
 
@@ -214,10 +209,12 @@ sub Reload  {
         $function =~ s/\n\r\n\S+\s*\r\n/\n/g;
         $function =~ s/^\S+\s*\r\n//;
       }
-    } # get $function from internet
+    } # end of get $function from internet
     $function = $self->JavaScript2Perl($function);
-    eval($function);
-
+    {
+      no warnings 'redefine';
+      eval($function);
+    }
     ########## added to version 0.2 cmac march 2010
     if ($@) {die "Bad JavaScript->perl translation.\n"
                . "Please notify the co-maintainer of HTTP::ProxyAutoConfig:\n$@"}
@@ -246,7 +243,10 @@ sub Reload  {
     } else {
       $function .= "  return \"DIRECT\"; }";
     }
-    eval($function);
+    {
+      no warnings 'redefine';
+      eval($function);
+    }
     if ($@) {die $@}
   }
 }

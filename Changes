@@ -1,3 +1,12 @@
+0.3  Mar 25 2010
+
+     * Add CONFIG_REQUIRES EU::MM 6.56 to work around a FAIL from a 
+       tester with an old EU::MM that didn't understand BUILD_REQUIRES.
+     * Updated t/01test.t to use a proper URL so it tests getting 
+       a .pac file from the net.
+     * Optimized reading file from the internet for new(URL).
+     * Eliminated dependence on POSIX.
+
 0.2  Mar 13 2010
 
      updated by Craig MacKenna:
